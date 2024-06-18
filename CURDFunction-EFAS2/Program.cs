@@ -1,10 +1,10 @@
-﻿using Core.Entities;
-using Core;
-using Core.Interfaces;
+﻿using Core;
 using Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using Core.Entities;
+using Core.Interfaces;
 
 class Program
 {
@@ -15,13 +15,12 @@ class Program
         var serviceProvider = new ServiceCollection()
             .AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source=persons.db"))
             .AddScoped<IPersonRepository, PersonRepository>()
-        .BuildServiceProvider();
+            .BuildServiceProvider();
 
         _repository = serviceProvider.GetService<IPersonRepository>();
-        using (var context = serviceProvider.GetService<AppDbContext>())
-        {
-            context.Database.Migrate();
-        }
+
+        // Initialize the database
+        InitializeDatabase(serviceProvider);
 
         while (true)
         {
@@ -56,6 +55,15 @@ class Program
                     Console.WriteLine("Invalid option. Try again.");
                     break;
             }
+        }
+    }
+
+    private static void InitializeDatabase(IServiceProvider serviceProvider)
+    {
+        using (var scope = serviceProvider.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            context.Database.Migrate();
         }
     }
 
